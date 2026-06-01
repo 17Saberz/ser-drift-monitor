@@ -9,7 +9,7 @@ A monitoring platform for Speech Emotion Recognition (SER) models that automatic
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1 | Research & Dataset Preparation | ✅ Done |
-| 2 | Audio Preprocessing & Feature Extraction | 🔲 |
+| 2 | Audio Preprocessing & Feature Extraction | ✅ Done |
 | 3 | Model Training & Evaluation | 🔲 |
 | 4 | Data Drift Detection | 🔲 |
 | 5 | Monitoring System & Automation | 🔲 |
