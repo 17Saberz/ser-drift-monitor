@@ -1,7 +1,5 @@
 # Automated Speech Emotion Recognition Monitoring Platform with Data Drift Detection
 
-**Student:** 6610110043 นายจิรเมธ เจริญขวัญ
-
 ## Overview
 
 A monitoring platform for Speech Emotion Recognition (SER) models that automatically detects data drift and model performance degradation in production environments.
