@@ -18,8 +18,8 @@ import yaml
 from pathlib import Path
 from tqdm import tqdm
 
-import torch
-from transformers import Wav2Vec2Processor, Wav2Vec2Model
+# torch and transformers are imported lazily inside Wav2Vec2Extractor
+# so that --no_wav2vec2 runs without requiring a working PyTorch install.
 
 
 EMOTION_LABELS = [
@@ -63,22 +63,26 @@ def extract_mfcc(
 
 class Wav2Vec2Extractor:
     def __init__(self, model_name: str = "facebook/wav2vec2-base", device: str = None):
+        import torch
+        from transformers import Wav2Vec2Processor, Wav2Vec2Model
+
+        self.torch = torch
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Loading Wav2Vec2 ({model_name}) on {self.device} ...")
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
         self.model = Wav2Vec2Model.from_pretrained(model_name).to(self.device)
         self.model.eval()
 
-    @torch.no_grad()
     def extract(self, audio: np.ndarray, sr: int = 16000) -> np.ndarray:
         """Returns mean-pooled last hidden state: (768,) for wav2vec2-base."""
-        inputs = self.processor(
-            audio, sampling_rate=sr, return_tensors="pt", padding=True
-        )
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        outputs = self.model(**inputs)
-        # Mean pool over time axis
-        embedding = outputs.last_hidden_state.squeeze(0).mean(dim=0)
+        torch = self.torch
+        with torch.no_grad():
+            inputs = self.processor(
+                audio, sampling_rate=sr, return_tensors="pt", padding=True
+            )
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            outputs = self.model(**inputs)
+            embedding = outputs.last_hidden_state.squeeze(0).mean(dim=0)
         return embedding.cpu().numpy()  # (768,)
 
 
