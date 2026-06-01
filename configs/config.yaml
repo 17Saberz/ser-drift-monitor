@@ -1,0 +1,54 @@
+dataset:
+  name: RAVDESS
+  raw_dir: data/raw
+  processed_dir: data/processed
+  features_dir: data/features
+  sample_rate: 16000
+  emotions:
+    - neutral
+    - calm
+    - happy
+    - sad
+    - angry
+    - fearful
+    - disgust
+    - surprised
+
+audio_preprocessing:
+  target_sr: 16000
+  max_duration: 5.0        # seconds
+  silence_threshold: 0.01
+  normalize: true
+
+feature_extraction:
+  mfcc:
+    n_mfcc: 40
+    n_fft: 512
+    hop_length: 160
+  wav2vec2:
+    model_name: facebook/wav2vec2-base
+    layer: -1
+
+model:
+  type: mlp               # options: mlp, svm, rf
+  hidden_dims: [256, 128, 64]
+  dropout: 0.3
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  test_size: 0.2
+  random_state: 42
+
+drift_detection:
+  reference_split: 0.7    # fraction of data used as reference (training)
+  ks_test_threshold: 0.05 # p-value threshold for KS test
+  wasserstein_threshold: 0.1
+  drift_report_dir: data/drift_reports
+
+monitoring:
+  export_dir: data/monitoring_exports
+  metrics_file: model_metrics.csv
+  drift_file: drift_scores.csv
+  alert_threshold:
+    f1_drop: 0.05         # alert if F1 drops more than 5%
+    drift_score: 0.3
