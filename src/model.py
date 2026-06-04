@@ -78,6 +78,8 @@ def load_features(features_dir: str = "data/features", feature_type: str = "mfcc
 
 def build_model(cfg: dict) -> MLPClassifier:
     mc = cfg["model"]
+    # Note: sklearn MLPClassifier has no dropout param (that's PyTorch-only).
+    # Regularization is handled via alpha (L2 penalty) instead.
     return MLPClassifier(
         hidden_layer_sizes=tuple(mc["hidden_dims"]),
         activation="relu",
@@ -86,7 +88,6 @@ def build_model(cfg: dict) -> MLPClassifier:
         batch_size=mc["batch_size"],
         learning_rate_init=mc["learning_rate"],
         max_iter=mc["epochs"],
-        dropout=mc["dropout"] if hasattr(MLPClassifier, "dropout") else None,
         random_state=mc["random_state"],
         early_stopping=True,
         validation_fraction=0.1,
@@ -136,7 +137,6 @@ def train(
     print("\nTraining final model ...")
     model = build_model(cfg)
     # Remove None kwargs (dropout not supported in sklearn MLP)
-    model.set_params(**{k: v for k, v in model.get_params().items() if v is not None})
     model.fit(X_train_s, y_train)
     print(f"  Iterations: {model.n_iter_}")
 
