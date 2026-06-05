@@ -22,9 +22,20 @@ from pathlib import Path
 from datetime import datetime
 from scipy import stats
 
+# Project root = parent of src/
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _resolve(path: str) -> Path:
+    """Return path as-is if it exists, otherwise resolve from project root."""
+    p = Path(path)
+    if p.exists():
+        return p
+    return PROJECT_ROOT / path
+
 
 def load_config(config_path: str = "configs/config.yaml") -> dict:
-    with open(config_path, "r") as f:
+    with open(_resolve(config_path), "r") as f:
         return yaml.safe_load(f)
 
 
@@ -149,11 +160,11 @@ def run_drift_detection(
 
     cfg = load_config(config_path)
     dc  = cfg["drift_detection"]
-    Path(drift_dir).mkdir(parents=True, exist_ok=True)
-    Path(exports_dir).mkdir(parents=True, exist_ok=True)
+    _resolve(drift_dir).mkdir(parents=True, exist_ok=True)
+    _resolve(exports_dir).mkdir(parents=True, exist_ok=True)
 
     # Load features
-    feat_path = Path(features_dir)
+    feat_path = _resolve(features_dir)
     X = np.load(feat_path / "mfcc_features.npy")           # (N, 240)
     metadata  = pd.read_csv(feat_path / "metadata.csv")
     feature_names = [f"mfcc_{i}" for i in range(X.shape[1])]
@@ -194,14 +205,14 @@ def run_drift_detection(
 
         # Save per-feature report
         ts_file = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_path = Path(drift_dir) / f"drift_report_{name}_{ts_file}.csv"
+        report_path = _resolve(drift_dir) / f"drift_report_{name}_{ts_file}.csv"
         report.to_csv(report_path, index=False)
 
         all_summaries.append(summ)
 
     # Append aggregate scores to monitoring_exports (Power BI trend)
     scores_df   = pd.DataFrame(all_summaries)
-    scores_file = Path(exports_dir) / "drift_scores.csv"
+    scores_file = _resolve(exports_dir) / "drift_scores.csv"
     scores_df.to_csv(
         scores_file,
         mode="a",

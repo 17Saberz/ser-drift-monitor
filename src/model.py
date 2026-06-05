@@ -32,11 +32,18 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _resolve(path: str) -> Path:
+    p = Path(path)
+    return p if p.exists() else PROJECT_ROOT / path
+
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
 def load_config(config_path: str = "configs/config.yaml") -> dict:
-    with open(config_path, "r") as f:
+    with open(_resolve(config_path), "r") as f:
         return yaml.safe_load(f)
 
 
@@ -48,7 +55,7 @@ def load_features(features_dir: str = "data/features", feature_type: str = "mfcc
     feature_type: 'mfcc' (240-dim) or 'wav2vec2' (768-dim)
     Returns X_train, X_test, y_train, y_test, metadata, idx2label
     """
-    feat_path = Path(features_dir)
+    feat_path = _resolve(features_dir)
 
     if feature_type == "wav2vec2" and (feat_path / "wav2vec2_features.npy").exists():
         X = np.load(feat_path / "wav2vec2_features.npy")
@@ -108,8 +115,8 @@ def train(
 ) -> dict:
 
     cfg = load_config(config_path)
-    Path(models_dir).mkdir(parents=True, exist_ok=True)
-    Path(exports_dir).mkdir(parents=True, exist_ok=True)
+    _resolve(models_dir).mkdir(parents=True, exist_ok=True)
+    _resolve(exports_dir).mkdir(parents=True, exist_ok=True)
 
     # ── Load data ─────────────────────────────────────────────────────────────
     X_train, X_test, y_train, y_test, metadata, idx2label = load_features(
@@ -163,12 +170,12 @@ def train(
     print(f"{'='*45}")
 
     # ── Save model & scaler ───────────────────────────────────────────────────
-    joblib.dump(model,  Path(models_dir) / "mlp_model.joblib")
-    joblib.dump(scaler, Path(models_dir) / "scaler.joblib")
+    joblib.dump(model,  _resolve(models_dir) / "mlp_model.joblib")
+    joblib.dump(scaler, _resolve(models_dir) / "scaler.joblib")
     print(f"\nModel saved to {models_dir}/")
 
     # ── Export metrics ────────────────────────────────────────────────────────
-    exports = Path(exports_dir)
+    exports = _resolve(exports_dir)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Append-mode metrics log (for Power BI trend line)

@@ -21,6 +21,13 @@ from tqdm import tqdm
 # torch and transformers are imported lazily inside Wav2Vec2Extractor
 # so that --no_wav2vec2 runs without requiring a working PyTorch install.
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _resolve(path: str) -> Path:
+    p = Path(path)
+    return p if p.exists() else PROJECT_ROOT / path
+
 
 EMOTION_LABELS = [
     "neutral", "calm", "happy", "sad",
@@ -30,7 +37,7 @@ LABEL2IDX = {e: i for i, e in enumerate(EMOTION_LABELS)}
 
 
 def load_config(config_path: str = "configs/config.yaml") -> dict:
-    with open(config_path, "r") as f:
+    with open(_resolve(config_path), "r") as f:
         return yaml.safe_load(f)
 
 
