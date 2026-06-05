@@ -1,0 +1,4 @@
+n_features,ks_drifted_features,ks_drift_ratio,w_drifted_features,w_drift_ratio,mean_ks_statistic,mean_wasserstein,max_mean_shift,scenario,timestamp,noise_std
+240,4,0.0167,75,0.3125,0.0532,0.1208,0.6765000224113464,baseline,2026-06-05 17:03:39,
+240,169,0.7042,240,1.0,0.3039,0.6164,0.7931,noise,2026-06-05 17:03:39,1.0
+240,232,0.9667,138,0.575,0.2784,0.9726,16.029399871826172,speaker_split,2026-06-05 17:03:39,
