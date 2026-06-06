@@ -186,10 +186,15 @@ def run_monitoring_pipeline(
     train_mask = metadata["split"] == "train"
     X_ref      = X[train_mask.values]
 
-    # ── Baseline F1 (from last model_metrics run) ─────────────────────────────
-    metrics_file = _resolve(exports_dir) / "model_metrics.csv"
-    if metrics_file.exists():
-        baseline_f1 = pd.read_csv(metrics_file)["test_f1"].iloc[-1]
+    # ── Baseline F1 (from Phase 3 training output) ───────────────────────────
+    # model_metrics.csv is written by src/model.py with a fixed 10-column schema.
+    # We only read from it here — monitoring writes to monitoring_log.csv instead.
+    train_metrics_file = _resolve(exports_dir) / "model_metrics.csv"
+    if train_metrics_file.exists():
+        try:
+            baseline_f1 = pd.read_csv(train_metrics_file)["test_f1"].iloc[-1]
+        except Exception:
+            baseline_f1 = 0.5986
     else:
         baseline_f1 = 0.5986  # fallback from Phase 3 results
 
@@ -252,7 +257,8 @@ def run_monitoring_pipeline(
         "status":           alert["status"],
     }])
 
-    monitor_file = exports / mc["metrics_file"]
+    # Write to monitoring_log.csv (separate from model_metrics.csv)
+    monitor_file = exports / "monitoring_log.csv"
     report_row.to_csv(
         monitor_file,
         mode="a",
