@@ -1,0 +1,85 @@
+id: ser-drift-monitoring
+namespace: ser.monitoring
+description: "Automated SER Monitoring Pipeline with Drift Detection"
+
+# Run every hour
+triggers:
+  - id: hourly_schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 * * * *"
+
+inputs:
+  - id: scenario
+    type: STRING
+    defaults: baseline
+    description: "Drift scenario: baseline | noise | speaker_split | gradual"
+  - id: batch_size
+    type: INT
+    defaults: 50
+  - id: noise_std
+    type: FLOAT
+    defaults: 1.0
+
+tasks:
+  # ── Step 1: Run inference + drift detection ──────────────────────────────
+  - id: run_monitoring
+    type: io.kestra.plugin.scripts.python.Commands
+    description: "Run SER monitoring pipeline"
+    commands:
+      - python src/monitoring.py
+          --scenario {{ inputs.scenario }}
+          --batch_size {{ inputs.batch_size }}
+          --noise_std {{ inputs.noise_std }}
+    env:
+      PYTHONPATH: "."
+
+  # ── Step 2: Read latest alert log row ────────────────────────────────────
+  - id: read_alert
+    type: io.kestra.plugin.scripts.python.Commands
+    description: "Read last alert status from CSV"
+    commands:
+      - >
+        python -c "
+        import pandas as pd, json
+        df = pd.read_csv('data/monitoring_exports/alert_log.csv')
+        last = df.iloc[-1].to_dict()
+        print(json.dumps(last))
+        "
+    outputFiles:
+      - "*.json"
+
+  # ── Step 3: Conditional alert notification ───────────────────────────────
+  - id: check_alert
+    type: io.kestra.plugin.core.flow.If
+    description: "Check if alert was triggered"
+    condition: "{{ outputs.read_alert.vars.any_alert == 'True' }}"
+    then:
+      - id: send_drift_alert
+        type: io.kestra.plugin.notifications.mail.MailSend
+        description: "Send email alert on drift detection"
+        from: "monitor@ser-platform.com"
+        to:
+          - "{{ secret('ALERT_EMAIL') }}"
+        subject: "🚨 SER Drift Alert — {{ outputs.read_alert.vars.timestamp }}"
+        htmlTextContent: |
+          <h2>SER Drift Alert Detected</h2>
+          <table>
+            <tr><td><b>Timestamp</b></td><td>{{ outputs.read_alert.vars.timestamp }}</td></tr>
+            <tr><td><b>Scenario</b></td><td>{{ outputs.read_alert.vars.scenario }}</td></tr>
+            <tr><td><b>KS Drift Ratio</b></td><td>{{ outputs.read_alert.vars.ks_drift_ratio }}</td></tr>
+            <tr><td><b>F1 Score</b></td><td>{{ outputs.read_alert.vars.f1_score }}</td></tr>
+            <tr><td><b>Baseline F1</b></td><td>{{ outputs.read_alert.vars.baseline_f1 }}</td></tr>
+            <tr><td><b>F1 Drop</b></td><td>{{ outputs.read_alert.vars.f1_drop }}</td></tr>
+          </table>
+          <p>Please review the Power BI monitoring dashboard.</p>
+
+    else:
+      - id: log_ok
+        type: io.kestra.plugin.core.log.Log
+        message: "✅ No drift detected — system healthy."
+
+# ── Error handling ──────────────────────────────────────────────────────────
+errors:
+  - id: pipeline_error
+    type: io.kestra.plugin.core.log.Log
+    message: "Pipeline failed: {{ errorLogs() }}"

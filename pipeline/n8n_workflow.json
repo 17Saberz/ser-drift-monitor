@@ -1,0 +1,88 @@
+{
+  "name": "SER Drift Monitoring Pipeline",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 1 }]
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Run Monitoring Pipeline",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [460, 300],
+      "parameters": {
+        "command": "cd /path/to/Mini_Project && python src/monitoring.py --scenario baseline --batch_size 50"
+      }
+    },
+    {
+      "id": "3",
+      "name": "Read Alert Log",
+      "type": "n8n-nodes-base.readBinaryFiles",
+      "position": [680, 300],
+      "parameters": {
+        "fileSelector": "data/monitoring_exports/alert_log.csv"
+      }
+    },
+    {
+      "id": "4",
+      "name": "Check Alert Status",
+      "type": "n8n-nodes-base.if",
+      "position": [900, 300],
+      "parameters": {
+        "conditions": {
+          "string": [{
+            "value1": "={{ $json.any_alert }}",
+            "operation": "equal",
+            "value2": "True"
+          }]
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Send Alert Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [1120, 200],
+      "parameters": {
+        "fromEmail": "monitor@ser-platform.com",
+        "toEmail": "={{ $env.ALERT_EMAIL }}",
+        "subject": "🚨 SER Drift Alert — {{ $json.timestamp }}",
+        "text": "Drift detected!\n\nScenario: {{ $json.scenario }}\nKS Drift: {{ $json.ks_drift_ratio }}\nF1 Score: {{ $json.f1_score }}\nBaseline F1: {{ $json.baseline_f1 }}\nF1 Drop: {{ $json.f1_drop }}\n\nPlease review the monitoring dashboard."
+      }
+    },
+    {
+      "id": "6",
+      "name": "Log OK Status",
+      "type": "n8n-nodes-base.noOp",
+      "position": [1120, 400],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Schedule Trigger":           { "main": [[{ "node": "Run Monitoring Pipeline", "type": "main", "index": 0 }]] },
+    "Run Monitoring Pipeline":    { "main": [[{ "node": "Read Alert Log",           "type": "main", "index": 0 }]] },
+    "Read Alert Log":             { "main": [[{ "node": "Check Alert Status",        "type": "main", "index": 0 }]] },
+    "Check Alert Status":         {
+      "main": [
+        [{ "node": "Send Alert Notification", "type": "main", "index": 0 }],
+        [{ "node": "Log OK Status",           "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "_comment": {
+    "setup": [
+      "1. Import this JSON into n8n via Workflows > Import from File",
+      "2. Update the executeCommand node path to your project directory",
+      "3. Configure email credentials in n8n Settings > Credentials",
+      "4. Set ALERT_EMAIL environment variable",
+      "5. Activate the workflow"
+    ]
+  }
+}
