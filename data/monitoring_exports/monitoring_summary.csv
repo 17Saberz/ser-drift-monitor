@@ -1,0 +1,5 @@
+scenario,runs,alerts,avg_f1,avg_drift,alert_rate
+baseline,2,1,0.5558,0.0396,0.5
+gradual,1,1,0.0826,0.6667,1.0
+noise,11,11,0.1203,0.6508,1.0
+speaker_split,1,1,0.8796,0.475,1.0
