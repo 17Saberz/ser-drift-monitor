@@ -215,7 +215,10 @@ def run_monitoring_pipeline(
     print(f"  Inference done — Acc: {batch_acc:.4f}  F1: {batch_f1:.4f}")
 
     # ── Drift Detection ───────────────────────────────────────────────────────
-    from src.drift_detection import DriftDetector
+    try:
+        from src.drift_detection import DriftDetector   # called as module (notebooks/api)
+    except ModuleNotFoundError:
+        from drift_detection import DriftDetector       # called directly (terminal)
 
     detector = DriftDetector(
         ks_threshold=dc["ks_test_threshold"],
