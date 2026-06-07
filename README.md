@@ -13,7 +13,7 @@ A monitoring platform for Speech Emotion Recognition (SER) models that automatic
 | 3 | Model Training & Evaluation | ✅ Done |
 | 4 | Data Drift Detection | ✅ Done |
 | 5 | Monitoring System & Automation | ✅ Done |
-| 6 | Dashboard & End-to-End Evaluation | 🔲 |
+| 6 | Dashboard & End-to-End Evaluation | ✅ Done |
 
 ## Tech Stack
 
@@ -41,8 +41,21 @@ A monitoring platform for Speech Emotion Recognition (SER) models that automatic
 │   ├── feature_extraction.py
 │   ├── model.py
 │   ├── drift_detection.py
-│   └── monitoring.py
-├── pipeline/             # n8n / Kestra workflow configs
+│   ├── monitoring.py
+│   ├── api.py                   # FastAPI endpoint for n8n
+│   └── export_powerbi.py        # Consolidates outputs for Power BI
+├── pipeline/
+│   ├── n8n_workflow.json        # n8n hourly schedule (HTTP Request node)
+│   └── kestra_flow.yaml         # Kestra alternative
+├── dashboard/
+│   └── POWERBI_SETUP.md         # 4-page Power BI dashboard guide
+├── notebooks/
+│   ├── 01_eda.ipynb
+│   ├── 02_feature_extraction.ipynb
+│   ├── 03_model_training.ipynb
+│   ├── 04_drift_detection.ipynb
+│   ├── 05_monitoring_pipeline.ipynb
+│   └── 06_end_to_end_evaluation.ipynb
 ├── models/               # saved model weights
 ├── configs/config.yaml
 └── requirements.txt
